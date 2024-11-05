@@ -22,7 +22,6 @@ STOREDIR_NAME="store"
 STOREDIR="$CAMANDIR/$STOREDIR_NAME"
 HOSTDIR="$STOREDIR/$HOST"
 DATEDIR=$(date +"%Y-%m-%d")
-COMMON_NAME_SERVER=" Server Authentication"
 COMMON_NAME_CLIENT=" Client Authentication"
 
 # Check cert authority directory exists
@@ -120,6 +119,37 @@ function init_ca_prompt_config {
     perl -pi -e "s/<<My Certificate Authority>>/$ORG_UNIT/g" "$CADIR/caconfig.cnf"
     perl -pi -e "s/<<My Certificate Common Name>>/$COMMON_NAME/g" "$CADIR/caconfig.cnf"
     perl -pi -e "s/<<Email Address>>/$ESCAPED_EMAIL/g" "$CADIR/caconfig.cnf"
+
+  fi
+
+}
+
+function init_host_prompt_config {
+  #
+  # Initialise a new host distinguished name
+  #
+
+  # Check config exists
+  if [[ ! -f "$CADIR/host.cnf.default" ]]; then
+    echo "Could not find host.cnf.default"
+    exit 1
+  fi
+  # Check config exists
+  if [[ ! -f "$CADIR/host.cnf" ]]; then
+    echo "Please enter certificate configuration information:"
+    read -p "Country Name (CN): " COUNTRY
+    read -p "Province (ST): " STATE
+    read -p "Organization (O): " ORGANIZATION
+    read -p "Organizational Unit (OU): " ORG_UNIT
+    read -p "Email: " E_MAIL
+    ESCAPED_EMAIL=$(echo "$E_MAIL" | sed 's/@/\\@/g')
+
+    cp "$CADIR/host.cnf.default" "$CADIR/host.cnf"
+    perl -pi -e "s/<<CN>>/$COUNTRY/g" "$CADIR/host.cnf"
+    perl -pi -e "s/<<State or province>>/$STATE/g" "$CADIR/host.cnf"
+    perl -pi -e "s/<<My Organisation>>/$ORGANIZATION/g" "$CADIR/host.cnf"
+    perl -pi -e "s/<<My Certificate Authority>>/$ORG_UNIT/g" "$CADIR/host.cnf"
+    perl -pi -e "s/<<Email Address>>/$ESCAPED_EMAIL/g" "$CADIR/host.cnf"
 
   fi
 
@@ -257,13 +287,14 @@ function command_new {
   #
   # Add a new host
   #
+  init_host_prompt_config
 
   # Create new config
   mkdir "$HOSTDIR" || exit 1
   cp "$CADIR/host.cnf" "$HOSTDIR/config.cnf"
 
   # Set hostname
-  perl -pi -e "s/<<HOSTNAME>>/$HOST$COMMON_NAME_SERVER/g" "$HOSTDIR/config.cnf"
+  perl -pi -e "s/<<HOSTNAME>>/$HOST/g" "$HOSTDIR/config.cnf"
 
   # Add alt hostnames
   CAMAN_ALT_HOSTNAMES="${*:2}"
@@ -283,7 +314,7 @@ function command_new {
   # copy server config for client config
   cp "$HOSTDIR/config.cnf" "$HOSTDIR/config-client.cnf"
 
-  sed -i "s/\(commonName *\)= *$HOST$COMMON_NAME_SERVER/\1= $HOST$COMMON_NAME_CLIENT/" \
+  sed -i "s/\(commonName *\)= *$HOST/\1= $HOST$COMMON_NAME_CLIENT/" \
     "$HOSTDIR/config-client.cnf"
 
   echo "New host added"
