@@ -92,10 +92,42 @@ function split_ca {
   fi
 }
 
+function init_ca_prompt_config {
+  #
+  # Initialise a new certificate authority distinguished name
+  #
+
+  # Check config exists
+  if [[ ! -f "$CADIR/caconfig.cnf.default" ]]; then
+    echo "Could not find caconfig.cnf.default"
+    exit 1
+  fi
+  # Check config exists
+  if [[ ! -f "$CADIR/caconfig.cnf" ]]; then
+    echo "Please enter certificate configuration information:"
+    read -p "Country Name (CN): " COUNTRY
+    read -p "Province (ST): " STATE
+    read -p "Organization (O): " ORGANIZATION
+    read -p "Organizational Unit (OU): " ORG_UNIT
+    read -p "Common Name (CN): " COMMON_NAME
+    read -p "Email: " E_MAIL
+    ESCAPED_EMAIL=$(echo "$E_MAIL" | sed 's/@/\\@/g')
+
+    cp "$CADIR/caconfig.cnf.default" "$CADIR/caconfig.cnf"
+    perl -pi -e "s/<<CN>>/$COUNTRY/g" "$CADIR/caconfig.cnf"
+    perl -pi -e "s/<<State or province>>/$STATE/g" "$CADIR/caconfig.cnf"
+    perl -pi -e "s/<<My Organisation>>/$ORGANIZATION/g" "$CADIR/caconfig.cnf"
+    perl -pi -e "s/<<My Certificate Authority>>/$ORG_UNIT/g" "$CADIR/caconfig.cnf"
+    perl -pi -e "s/<<My Certificate Common Name>>/$COMMON_NAME/g" "$CADIR/caconfig.cnf"
+    perl -pi -e "s/<<Email Address>>/$ESCAPED_EMAIL/g" "$CADIR/caconfig.cnf"
+
+  fi
+
+}
+
 #
 # Commands
 #
-
 function command_init {
   #
   # Initialise a new certificate authority
@@ -106,6 +138,8 @@ function command_init {
     echo "Certificate authority already exists"
     exit 1
   fi
+
+  init_ca_prompt_config
 
   # Check config exists
   if [[ ! -f "$CADIR/caconfig.cnf" ]]; then
@@ -584,10 +618,12 @@ Usage:  caman init [ca:<path/to/root_ca>]
         caman new <hostname> [<alt> [<alt> [...]]]
         caman sign <hostname>
         caman renew <hostname>
-        caman client_sign <hostname>
-        caman client_renew <hostname>
+        caman client_sign <hostname> <commonName>
+        caman client_renew <hostname> <commonName>
         caman revoke <hostname>
         caman revoke ca:<path/to/intermediate_ca>
+        caman client_revoke <hostname> <commonName>
+
 EOF
 
   ;;

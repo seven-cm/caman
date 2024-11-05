@@ -49,7 +49,7 @@ stateOrProvinceName     = supplied
 organizationName        = supplied
 organizationalUnitName  = supplied
 commonName              = supplied
-emailAddress            = supplied
+emailAddress            = optional
 
 ####################################################################
 # The default root certificate generation policy
@@ -68,12 +68,12 @@ string_mask             = utf8only
 [ req_distinguished_name ]
 # >> Change the following 6 variables:
 #   countryName must be 2 character character code
-countryName             = CN
-stateOrProvinceName     = State or province
-organizationName        = My Organisation
-organizationalUnitName  = My Certificate Authority
-commonName              = My Certificate Authority
-emailAddress            = email@example.com
+countryName             = <<CN>>
+stateOrProvinceName     = <<State or province>>
+organizationName        = <<My Organisation>>
+organizationalUnitName  = <<My Certificate Authority>>
+commonName              = <<My Certificate Common Name>>
+emailAddress            = <<Email Address>>
 # << End changes
 
 ####################################################################

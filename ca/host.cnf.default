@@ -18,11 +18,11 @@ req_extensions          = v3_req
 [ host_distinguished_name ]
 # >> Change the following 4 variables:
 #   countryName must be 2 character character code
-countryName             = CN
-stateOrProvinceName     = State or province
-organizationName        = My Organisation
-organizationalUnitName  = My Department
-emailAddress            = email@example.com
+countryName             = <<CN>>
+stateOrProvinceName     = <<State or province>>
+organizationName        = <<My Organisation>>
+organizationalUnitName  = <<My Certificate Authority>>
+emailAddress            = <<Email Address>>
 # << End changes
 commonName              = <<HOSTNAME>>
 
