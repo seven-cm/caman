@@ -22,7 +22,6 @@ STOREDIR_NAME="store"
 STOREDIR="$CAMANDIR/$STOREDIR_NAME"
 HOSTDIR="$STOREDIR/$HOST"
 DATEDIR=$(date +"%Y-%m-%d")
-COMMON_NAME_CLIENT=" Client Authentication"
 
 # Check cert authority directory exists
 if [[ ! -d "$CADIR" ]]; then
@@ -311,12 +310,6 @@ function command_new {
         '
   perl -ni -e "$PERL_ALT_HOSTNAMES" "$HOSTDIR/config.cnf"
 
-  # copy server config for client config
-  cp "$HOSTDIR/config.cnf" "$HOSTDIR/config-client.cnf"
-
-  sed -i "s/\(commonName *\)= *$HOST/\1= $HOST$COMMON_NAME_CLIENT/" \
-    "$HOSTDIR/config-client.cnf"
-
   echo "New host added"
 }
 
@@ -327,8 +320,13 @@ function command_sign_common {
 
   local param=${1:-usr_cert}
   if [ "$param" != "usr_cert" ]; then
-    CONFIG_FILE="config-client.cnf"
-    SIGN_TAG="CLIENT"
+    # copy server config for client config
+    cp "$HOSTDIR/config.cnf" "$HOSTDIR/config-client-$CLIENT_COMMON_NAME.cnf"
+    sed -i "s/\(commonName *\)= *$HOST/\1= $CLIENT_COMMON_NAME/" \
+      "$HOSTDIR/config-client-$CLIENT_COMMON_NAME.cnf"
+
+    CONFIG_FILE="config-client-$CLIENT_COMMON_NAME.cnf"
+    SIGN_TAG="CLIENT-$CLIENT_COMMON_NAME"
   else
     CONFIG_FILE="config.cnf"
     SIGN_TAG="SERVER"
@@ -401,12 +399,12 @@ function command_sign_common {
   fi
 
   # Create client.p12
-  if [ "$SIGN_TAG" == "CLIENT" ]; then
+  if [ "$SIGN_TAG" != "SERVER" ]; then
     openssl pkcs12 -export -out "$CERTDIR/$HOST.client.p12" \
       -inkey "$CERTDIR/$HOST.key.pem" \
       -in "$CERTDIR/$HOST.crt.pem" \
       -certfile "$CADIR/ca.crt.pem" \
-      -password pass:clientpass
+      -password pass:$CLIENT_PASSWORD
   fi
 
   echo "Certificate generated"
@@ -509,9 +507,9 @@ function command_revoke_common {
   if [ $# -gt 0 ]; then
     local param=${1:-server}
     if [ "$param" == "server" ]; then
-      REVOKE_CN=$REVOKE_CN$COMMON_NAME_SERVER
+      REVOKE_CN=$REVOKE_CN
     elif [ "$param" == "client" ]; then
-      REVOKE_CN=$REVOKE_CN$COMMON_NAME_CLIENT
+      REVOKE_CN=$CLIENT_COMMON_NAME
     fi
   fi
 
@@ -600,6 +598,8 @@ sign)
 
 client_sign)
   # Create a new CSR, private key and signed certificate (for clients)
+  CLIENT_COMMON_NAME=$3
+  CLIENT_PASSWORD=$4
   command_sign_client
 
   ;;
@@ -618,6 +618,7 @@ host_revoke)
 
 client_revoke)
   # Revoke a client certificate
+  CLIENT_COMMON_NAME=$3
   command_revoke_client
 
   ;;
@@ -636,6 +637,8 @@ renew)
 
 client_renew)
   # Renew a client certificate by revoking then signing
+  CLIENT_COMMON_NAME=$3
+  CLIENT_PASSWORD=$4
   command_revoke_client
   command_sign_client
 
@@ -649,8 +652,8 @@ Usage:  caman init [ca:<path/to/root_ca>]
         caman new <hostname> [<alt> [<alt> [...]]]
         caman sign <hostname>
         caman renew <hostname>
-        caman client_sign <hostname> <commonName>
-        caman client_renew <hostname> <commonName>
+        caman client_sign <hostname> <commonName> <PKCS12_password>
+        caman client_renew <hostname> <commonName> <PKCS12_password>
         caman revoke <hostname>
         caman revoke ca:<path/to/intermediate_ca>
         caman client_revoke <hostname> <commonName>
