@@ -652,11 +652,11 @@ Usage:  caman init [ca:<path/to/root_ca>]
         caman new <hostname> [<alt> [<alt> [...]]]
         caman sign <hostname>
         caman renew <hostname>
-        caman client_sign <hostname> <commonName> <PKCS12_password>
-        caman client_renew <hostname> <commonName> <PKCS12_password>
         caman revoke <hostname>
         caman revoke ca:<path/to/intermediate_ca>
-        caman client_revoke <hostname> <commonName>
+        caman client_sign <hostname> <commonname> <pkcs12_password>
+        caman client_renew <hostname> <commonname> <pkcs12_password>
+        caman client_revoke <hostname> <commonname>
 
 EOF
 
